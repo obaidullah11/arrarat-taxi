@@ -1,0 +1,124 @@
+from django.contrib import admin
+from .models import dockets
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph
+from reportlab.lib.styles import ParagraphStyle
+from django.utils.html import format_html
+
+@admin.register(dockets)
+class SignatureReceiptAdmin(admin.ModelAdmin):
+    list_display = (
+        'date',
+        'docket_id',
+        'get_driver_name',
+        'account_name',
+        'start_time',
+        'finish_time',
+        'trip_explanation',
+        'start_point',
+        'drop_point',
+        'taxi_no',
+        'dc_no',
+        'passenger_name',
+
+        'total',
+        'signature',
+    )
+
+    search_fields = ('passenger', 'account_name', 'date')
+    list_filter = ('date', 'passenger_name', 'Driver__name')
+
+    def get_driver_name(self, obj):
+        return obj.Driver.name
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+
+        # Check if 'passenger_name__name' filter has a selected value
+        passenger_filter_value = request.GET.get('passenger_name')
+
+        if not passenger_filter_value:
+            # If the filter is not active, remove the custom action
+            del actions['generate_pdf_for_selected_passenger']
+
+        return actions
+    def generate_pdf_for_selected_passenger(self, request, queryset):
+        if queryset:
+            passenger_name = queryset.first().passenger_name  # Assuming passenger name is the same for all selected records
+
+            # Create an HttpResponse object with PDF content
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{passenger_name}_records.pdf"'
+
+            # Create a PDF document
+            doc = SimpleDocTemplate(response, pagesize=landscape(letter))
+            elements = []
+
+            # Define the table data
+            data = [
+                ['Date', 'Docket\nID', 'Account\nName', 'Start\nTime', 'Finish\nTime', 'Start\nPoint', 'Drop\nPoint', 'Passenger\nName', 'Total', 'Signature'],
+            ]
+
+            # Define a custom paragraph style
+            custom_style = ParagraphStyle(
+                name='CustomNormal',  # Use a unique name
+                fontSize=8,
+                alignment=1,
+            )
+
+            for record in queryset:
+                # Add a column for the signature image
+                signature_image = Image(record.signature.path, width=50, height=50)
+
+                # Create paragraph objects with the custom style for text cells
+                date_paragraph = Paragraph(record.date.strftime('%Y-%m-%d'), custom_style)
+                docket_id_paragraph = Paragraph(record.docket_id, custom_style)
+                account_name_paragraph = Paragraph(record.account_name, custom_style)
+                start_time_paragraph = Paragraph(str(record.start_time), custom_style)
+                finish_time_paragraph = Paragraph(str(record.finish_time), custom_style)
+                start_point_paragraph = Paragraph(record.start_point, custom_style)
+                drop_point_paragraph = Paragraph(record.drop_point, custom_style)
+                passenger_name_paragraph = Paragraph(record.passenger_name, custom_style)
+                total_paragraph = Paragraph(str(record.total), custom_style)
+
+                data.append([
+                    date_paragraph,
+                    docket_id_paragraph,
+                    account_name_paragraph,
+                    start_time_paragraph,
+                    finish_time_paragraph,
+                    start_point_paragraph,
+                    drop_point_paragraph,
+                    passenger_name_paragraph,
+                    total_paragraph,
+                    signature_image,  # Add the signature image to the table
+                ])
+
+            # Define column widths and row heights for responsiveness
+            col_widths = [60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 40, 40, 100]  # Adjust the width of each column
+            row_heights = [80] * len(data)  # Set the initial row height
+
+            # Create a table
+            table = Table(data, colWidths=col_widths, rowHeights=row_heights)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ]))
+
+            elements.append(table)
+            doc.build(elements)
+
+            return response
+
+    generate_pdf_for_selected_passenger.short_description = "Generate PDF for Selected Passenger"
+
+
+      # Only superusers can access the action
+
+    actions = [generate_pdf_for_selected_passenger]
