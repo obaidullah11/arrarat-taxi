@@ -1974,55 +1974,122 @@ def get_driver_records8(request, driver_id):
 #         return Response(serializer.data)
 
 
+def aggregate_runsheet_data(runsheet_model, driver_id, start_of_week, end_of_week):
+    morning_sum = (
+        runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
+        .aggregate(total=Sum('Morning_price'))['total'] or Decimal('0.00')
+    )
+    evening_sum = (
+        runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
+        .aggregate(total=Sum('Evening_price'))['total'] or Decimal('0.00')
+    )
+    passenger_count = runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week]).count()
 
+    return morning_sum, evening_sum, passenger_count
 
 class RunsheetSumView(APIView):
     def get(self, request, driver_id):
         try:
+            # Get today's date and the start and end of the current week
             today = timezone.now().date()
             start_of_week = today - timedelta(days=today.weekday())
             end_of_week = start_of_week + timedelta(days=6)
 
-            runsheet_model = Runsheet1
+            # Define all runsheet models
+            runsheet_models = [Runsheet1, Runsheet2, Runsheet3, Runsheet4, Runsheet5, Runsheet6, Runsheet7, Runsheet8]
 
-            # Check if any records exist for the driver (without date filter)
-            test_records = runsheet_model.objects.filter(driver_id=driver_id)
-            if not test_records.exists():
+            total_morning_sum = Decimal('0.00')
+            total_evening_sum = Decimal('0.00')
+            total_passenger_count = 0
+
+            # Check if any records exist for the driver in any runsheet model
+            records_exist = any(
+                runsheet_model.objects.filter(driver_id=driver_id).exists()
+                for runsheet_model in runsheet_models
+            )
+            if not records_exist:
                 return Response({'error': 'No records found for this driver in any week.'})
 
-            # Proceed with the filtered query
-            morning_sum = (
-                runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
-                .aggregate(total=Sum('Morning_price'))['total'] or Decimal('0.00')
-            )
+            # Aggregate data from all runsheet models
+            for runsheet_model in runsheet_models:
+                morning_sum, evening_sum, passenger_count = aggregate_runsheet_data(runsheet_model, driver_id, start_of_week, end_of_week)
+                total_morning_sum += morning_sum
+                total_evening_sum += evening_sum
+                total_passenger_count += passenger_count
 
-            evening_sum = (
-                runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
-                .aggregate(total=Sum('Evening_price'))['total'] or Decimal('0.00')
-            )
-            passenger_count = runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week]).count()
+            # Print debug information
+            print(f"Start of Week: {start_of_week}")
+            print(f"End of Week: {end_of_week}")
+            print(f"Total Morning Sum: {total_morning_sum}")
+            print(f"Total Evening Sum: {total_evening_sum}")
+            print(f"Total Passenger Count: {total_passenger_count}")
 
-            # Construct response
-
-            # Construct response
-            total_sum = morning_sum + evening_sum
-
-            # Include passenger count and passengers for serializer
-
-            passengers = []
-
-            # Construct response
-            total_sum = morning_sum + evening_sum
+            # Construct the response data
+            total_sum = total_morning_sum + total_evening_sum
+            passengers = []  # Placeholder for passengers, if needed
 
             data = {
-                'morning_sum': morning_sum,
-                'evening_sum': evening_sum,
+                'morning_sum': total_morning_sum,
+                'evening_sum': total_evening_sum,
                 'total_sum': total_sum,
-                'passenger_count': passenger_count,
+                'passenger_count': total_passenger_count,
                 'passengers': passengers,
             }
+
             serializer = RunsheetSumSerializer(data)
             return Response(serializer.data)
 
         except Exception as e:
+            print(f"Exception occurred: {str(e)}")  # Print exception details for debugging
             return Response({'error': str(e)})
+
+# class RunsheetSumView(APIView):
+#     def get(self, request, driver_id):
+#         try:
+#             today = timezone.now().date()
+#             start_of_week = today - timedelta(days=today.weekday())
+#             end_of_week = start_of_week + timedelta(days=6)
+
+#             runsheet_model = Runsheet1
+
+#             # Check if any records exist for the driver (without date filter)
+#             test_records = runsheet_model.objects.filter(driver_id=driver_id)
+#             if not test_records.exists():
+#                 return Response({'error': 'No records found for this driver in any week.'})
+
+#             # Proceed with the filtered query
+#             morning_sum = (
+#                 runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
+#                 .aggregate(total=Sum('Morning_price'))['total'] or Decimal('0.00')
+#             )
+
+#             evening_sum = (
+#                 runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week])
+#                 .aggregate(total=Sum('Evening_price'))['total'] or Decimal('0.00')
+#             )
+#             passenger_count = runsheet_model.objects.filter(driver_id=driver_id, date_created__date__range=[start_of_week, end_of_week]).count()
+
+#             # Construct response
+
+#             # Construct response
+#             total_sum = morning_sum + evening_sum
+
+#             # Include passenger count and passengers for serializer
+
+#             passengers = []
+
+#             # Construct response
+#             total_sum = morning_sum + evening_sum
+
+#             data = {
+#                 'morning_sum': morning_sum,
+#                 'evening_sum': evening_sum,
+#                 'total_sum': total_sum,
+#                 'passenger_count': passenger_count,
+#                 'passengers': passengers,
+#             }
+#             serializer = RunsheetSumSerializer(data)
+#             return Response(serializer.data)
+
+#         except Exception as e:
+#             return Response({'error': str(e)})

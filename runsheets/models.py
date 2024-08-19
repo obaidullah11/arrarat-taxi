@@ -198,8 +198,8 @@ class Runsheet8(models.Model):
 ##########################################
 
 class AssignPassengerToRunsheet1(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -212,8 +212,8 @@ class AssignPassengerToRunsheet1(models.Model):
 
 
 class AssignPassengerToRunsheet2(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -225,8 +225,8 @@ class AssignPassengerToRunsheet2(models.Model):
         verbose_name_plural = "Assign Passengers to Runsheet 2"
 
 class AssignPassengerToRunsheet3(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -240,8 +240,8 @@ class AssignPassengerToRunsheet3(models.Model):
 
 
 class AssignPassengerToRunsheet4(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -254,8 +254,8 @@ class AssignPassengerToRunsheet4(models.Model):
 
 
 class AssignPassengerToRunsheet5(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -267,8 +267,8 @@ class AssignPassengerToRunsheet5(models.Model):
         verbose_name_plural = "Assign Passengers to Runsheet 5"
 
 class AssignPassengerToRunsheet6(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -279,8 +279,8 @@ class AssignPassengerToRunsheet6(models.Model):
         verbose_name = "Assign Passenger to Runsheet 6"
         verbose_name_plural = "Assign Passengers to Runsheet 6"
 class AssignPassengerToRunsheet7(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -293,8 +293,8 @@ class AssignPassengerToRunsheet7(models.Model):
 
 
 class AssignPassengerToRunsheet8(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,verbose_name="Driver")
-    passenger = models.ForeignKey(Passenger, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Driver")
+    passenger = models.ForeignKey(Passenger, on_delete=models.PROTECT)
     
     date_created = models.DateTimeField(auto_now_add=True)
 

@@ -1,12 +1,45 @@
 from django.contrib import admin
 from .models import dockets
+from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from django.utils.html import format_html
+class MonthListFilter(admin.SimpleListFilter):
+    title = _('Month')  # Displayed filter title
+    parameter_name = 'month'  # URL parameter name for the filter
 
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each tuple is the coded value
+        for the option that will appear in the URL query. The second element is the
+        human-readable name for the option that will appear in the right sidebar.
+        """
+        return (
+            ('1', _('January')),
+            ('2', _('February')),
+            ('3', _('March')),
+            ('4', _('April')),
+            ('5', _('May')),
+            ('6', _('June')),
+            ('7', _('July')),
+            ('8', _('August')),
+            ('9', _('September')),
+            ('10', _('October')),
+            ('11', _('November')),
+            ('12', _('December')),
+        )
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value provided in the query string.
+        """
+        if self.value():
+            # Filter queryset based on selected month
+            return queryset.filter(created_at__month=self.value())
+        return queryset
 @admin.register(dockets)
 class SignatureReceiptAdmin(admin.ModelAdmin):
     list_display = (
@@ -28,7 +61,7 @@ class SignatureReceiptAdmin(admin.ModelAdmin):
     )
 
     search_fields = ('passenger', 'account_name', 'date')
-    list_filter = ('date', 'passenger_name', 'Driver__name')
+    list_filter = (MonthListFilter, 'passenger_name', 'Driver__name')
 
     def get_driver_name(self, obj):
         return obj.Driver.name
