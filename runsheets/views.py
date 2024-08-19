@@ -40,6 +40,52 @@ def html_file_view(request):
 
 
 
+# class AddRunsheetDataView(View):
+#     @method_decorator(csrf_exempt)
+#     def dispatch(self, *args, **kwargs):
+#         return super().dispatch(*args, **kwargs)
+
+#     def post(self, request, *args, **kwargs):
+#         try:
+#             data = json.loads(request.body.decode('utf-8'))
+#             model_name = data.get('model_name')
+#             model_data = data.get('data')
+
+#             runsheet_models = {
+#                 'Runsheet1': Runsheet1,
+#                 'Runsheet2': Runsheet2,
+#                 'Runsheet3': Runsheet3,
+#                 'Runsheet4': Runsheet4,
+#                 'Runsheet5': Runsheet5,
+#                 'Runsheet6': Runsheet6,
+#                 'Runsheet7': Runsheet7,
+#                 'Runsheet8': Runsheet8,
+#             }
+
+#             if not model_name or model_name not in runsheet_models:
+#                 return JsonResponse({'error': 'Invalid model name'}, status=400)
+
+#             model_class = runsheet_models[model_name]
+#             driver_instance = User.objects.get(id=model_data['driver_id'])
+
+#             passenger_name = model_data.get('passenger_name')
+#             if passenger_name:
+#                 passenger_instance, created = Passenger.objects.get_or_create(name=passenger_name, defaults={})
+#             else:
+#                 passenger_instance = None  # Handle this case as needed
+
+#             model_data.pop('passenger_name', None)  # Remove passenger_name key from model_data
+
+#             instance = model_class(driver=driver_instance, **model_data)
+#             if passenger_instance:
+#                 instance.passenger_name = passenger_instance
+#             instance.save()
+
+#             return JsonResponse({'message': 'Data added successfully'}, status=200)
+
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+
 class AddRunsheetDataView(View):
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
@@ -76,6 +122,9 @@ class AddRunsheetDataView(View):
 
             model_data.pop('passenger_name', None)  # Remove passenger_name key from model_data
 
+            # Ensure 'type' is set to 'guest' if not provided
+            model_data['type'] = model_data.get('type', 'guest')
+
             instance = model_class(driver=driver_instance, **model_data)
             if passenger_instance:
                 instance.passenger_name = passenger_instance
@@ -85,8 +134,6 @@ class AddRunsheetDataView(View):
 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
-
 class PassengerFilterView(APIView):
     def get(self, request, user_id):
         try:

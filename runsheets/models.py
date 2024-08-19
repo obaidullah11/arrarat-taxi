@@ -59,6 +59,7 @@ class Runsheet1(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(default=timezone.now)
+    type = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"Runsheet1: {self.passenger_name} - {self.date_created}"
@@ -77,6 +78,7 @@ class Runsheet2(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"Runsheet2: {self.passenger_name} - {self.date_created}"
@@ -92,6 +94,7 @@ class Runsheet3(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"Runsheet3: {self.passenger_name} - {self.date_created}"
@@ -107,6 +110,8 @@ class Runsheet4(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Runsheet4: {self.passenger_name} - {self.date_created}"
@@ -123,6 +128,8 @@ class Runsheet5(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Runsheet5: {self.passenger_name} - {self.date_created}"
@@ -142,6 +149,8 @@ class Runsheet6(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Runsheet6: {self.passenger_name} - {self.date_created}"
@@ -158,6 +167,8 @@ class Runsheet7(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Runsheet7: {self.passenger_name} - {self.date_created}"
@@ -173,6 +184,8 @@ class Runsheet8(models.Model):
     Evening_price = models.DecimalField(max_digits=8, blank=True, null=True,decimal_places=2)
     driver = models.ForeignKey(User, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Runsheet8: {self.passenger_name} - {self.date_created}"

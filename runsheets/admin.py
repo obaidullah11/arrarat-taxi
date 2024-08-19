@@ -53,7 +53,7 @@ class PassengerAdmin(admin.ModelAdmin):
     list_filter = ['Passenger_type', 'organization_name']
     search_fields = ['name', 'invoice_number', 'organization_name']
 class Runsheet1Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
     def get_list_filter(self, request):
@@ -202,7 +202,7 @@ class Runsheet1Admin(admin.ModelAdmin):
 
 @admin.register(Runsheet2)
 class Runsheet2Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -291,7 +291,7 @@ class Runsheet2Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet3)
 class Runsheet3Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -380,7 +380,7 @@ class Runsheet3Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet4)
 class Runsheet4Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -469,7 +469,7 @@ class Runsheet4Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet5)
 class Runsheet5Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -558,7 +558,7 @@ class Runsheet5Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet6)
 class Runsheet6Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -647,7 +647,7 @@ class Runsheet6Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet7)
 class Runsheet7Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
@@ -736,7 +736,7 @@ class Runsheet7Admin(admin.ModelAdmin):
     export_driver_to_csv.short_description = "Export Driver to CSV"
 @admin.register(Runsheet8)
 class Runsheet8Admin(admin.ModelAdmin):
-    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created']
+    list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
     list_filter = ['driver__name', 'passenger_name__name']
     search_fields = ['passenger_name__name', 'driver__name']
 
