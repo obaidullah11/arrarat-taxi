@@ -95,7 +95,7 @@ class SignatureReceiptAdmin(admin.ModelAdmin):
 
             # Define a custom paragraph style
             custom_style = ParagraphStyle(
-                name='CustomNormal',  # Use a unique name
+                name='CustomNormal',
                 fontSize=8,
                 alignment=1,
             )
@@ -104,16 +104,16 @@ class SignatureReceiptAdmin(admin.ModelAdmin):
                 # Add a column for the signature image
                 signature_image = Image(record.signature.path, width=50, height=50)
 
-                # Create paragraph objects with the custom style for text cells
-                date_paragraph = Paragraph(record.date.strftime('%Y-%m-%d'), custom_style)
-                docket_id_paragraph = Paragraph(record.docket_id, custom_style)
-                account_name_paragraph = Paragraph(record.account_name, custom_style)
-                start_time_paragraph = Paragraph(str(record.start_time), custom_style)
-                finish_time_paragraph = Paragraph(str(record.finish_time), custom_style)
-                start_point_paragraph = Paragraph(record.start_point, custom_style)
-                drop_point_paragraph = Paragraph(record.drop_point, custom_style)
-                passenger_name_paragraph = Paragraph(record.passenger_name, custom_style)
-                total_paragraph = Paragraph(str(record.total), custom_style)
+                # Create paragraph objects with the custom style for text cells, handling None values
+                date_paragraph = Paragraph(record.date.strftime('%Y-%m-%d') if record.date else '', custom_style)
+                docket_id_paragraph = Paragraph(record.docket_id if record.docket_id else '', custom_style)
+                account_name_paragraph = Paragraph(record.account_name if record.account_name else '', custom_style)
+                start_time_paragraph = Paragraph(str(record.start_time) if record.start_time else '', custom_style)
+                finish_time_paragraph = Paragraph(str(record.finish_time) if record.finish_time else '', custom_style)
+                start_point_paragraph = Paragraph(record.start_point if record.start_point else '', custom_style)
+                drop_point_paragraph = Paragraph(record.drop_point if record.drop_point else '', custom_style)
+                passenger_name_paragraph = Paragraph(record.passenger_name if record.passenger_name else '', custom_style)
+                total_paragraph = Paragraph(str(record.total) if record.total else '', custom_style)
 
                 data.append([
                     date_paragraph,
@@ -129,8 +129,8 @@ class SignatureReceiptAdmin(admin.ModelAdmin):
                 ])
 
             # Define column widths and row heights for responsiveness
-            col_widths = [60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 40, 40, 100]  # Adjust the width of each column
-            row_heights = [80] * len(data)  # Set the initial row height
+            col_widths = [60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 40, 40, 100]
+            row_heights = [80] * len(data)
 
             # Create a table
             table = Table(data, colWidths=col_widths, rowHeights=row_heights)
@@ -148,6 +148,7 @@ class SignatureReceiptAdmin(admin.ModelAdmin):
             doc.build(elements)
 
             return response
+
 
     generate_pdf_for_selected_passenger.short_description = "Generate PDF for Selected Passenger"
 
