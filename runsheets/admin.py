@@ -54,7 +54,7 @@ class PassengerAdmin(admin.ModelAdmin):
     search_fields = ['name', 'invoice_number', 'organization_name']
 class Runsheet1Admin(admin.ModelAdmin):
     list_display = ['passenger_name', 'Morning_price', 'Evening_price', 'get_driver_name', 'date_created','type']
-    list_filter = ['driver__name', 'passenger_name__name']
+    list_filter = ['driver__name', 'passenger_name__name','date_created']
     search_fields = ['passenger_name__name', 'driver__name']
     def get_list_filter(self, request):
         """
@@ -102,14 +102,13 @@ class Runsheet1Admin(admin.ModelAdmin):
         else:
             driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
 
-        driver_name_slug = slugify(driver_name)  # create a slug to ensure the filename is URL-safe
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
         # Initialize dictionaries to store data
         passenger_days = defaultdict(lambda: defaultdict(float))
-        daily_totals = defaultdict(float)
         monthly_totals = defaultdict(float)
 
         # Process each runsheet entry
@@ -117,6 +116,7 @@ class Runsheet1Admin(admin.ModelAdmin):
             passenger = runsheet.passenger_name  # This is a Passenger object
             passenger_name = str(passenger)
             print(f"Processing passenger: {passenger_name}")
+
             # Get the string representation of the Passenger object (e.g., passenger name)
             date = runsheet.date_created.strftime("%d/%m/%Y")
 
@@ -125,7 +125,6 @@ class Runsheet1Admin(admin.ModelAdmin):
             daily_total = morning_total + afternoon_total
 
             passenger_days[passenger_name][date] += daily_total
-            daily_totals[date] += daily_total
             monthly_totals[passenger_name] += daily_total
 
         # Write CSV header
@@ -136,22 +135,20 @@ class Runsheet1Admin(admin.ModelAdmin):
 
         # Use a list of sorted passenger names for the header
         sorted_passenger_names = sorted(passenger_days.keys())
-        header = ['Date'] + sorted_passenger_names + ['Total']
+        header = ['Date'] + sorted_passenger_names
         csv_writer.writerow(header)
 
         # Write daily totals
-        for date in sorted(daily_totals.keys()):
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
             row = [date]
             for passenger_name in sorted_passenger_names:
                 row.append(f"{passenger_days[passenger_name][date]:.2f}")
-            row.append(f"{daily_totals[date]:.2f}")
             csv_writer.writerow(row)
 
         # Write monthly totals
         total_row = ['TOTAL']
         for passenger_name in sorted_passenger_names:
             total_row.append(f"{monthly_totals[passenger_name]:.2f}")
-        total_row.append(f"{sum(monthly_totals.values()):.2f}")
         csv_writer.writerow(total_row)
 
         return response
@@ -221,29 +218,60 @@ class Runsheet2Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -310,29 +338,60 @@ class Runsheet3Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -399,29 +458,60 @@ class Runsheet4Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -488,29 +578,60 @@ class Runsheet5Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -577,29 +698,60 @@ class Runsheet6Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -666,29 +818,60 @@ class Runsheet7Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
@@ -755,29 +938,60 @@ class Runsheet8Admin(admin.ModelAdmin):
         return obj.driver.name
 
     def export_summary_csv(self, request, queryset):
+    # Check if the queryset is empty
+        if not queryset.exists():
+            driver_name = "unknown_driver"
+        else:
+            driver_name = queryset[0].driver.name if queryset[0].driver else "unknown_driver"
+
+        driver_name_slug = slugify(driver_name)  # Create a slug to ensure the filename is URL-safe
+
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="summary_passenger_totals.csv"'
+        response['Content-Disposition'] = f'attachment; filename="summary_passenger_totals_{driver_name_slug}.csv"'
 
-        # Group by passenger name and calculate totals
-        passengers = list(set(runsheet.passenger_name for runsheet in queryset))
-        passenger_totals = {passenger: {'Morning': 0, 'Afternoon': 0, 'Total': 0} for passenger in passengers}
+        # Initialize dictionaries to store data
+        passenger_days = defaultdict(lambda: defaultdict(float))
+        monthly_totals = defaultdict(float)
 
+        # Process each runsheet entry
         for runsheet in queryset:
-            passenger_name = runsheet.passenger_name
-            passenger_totals[passenger_name]['Morning'] += runsheet.Morning_price or 0
-            passenger_totals[passenger_name]['Afternoon'] += runsheet.Evening_price or 0
-            passenger_totals[passenger_name]['Total'] += (runsheet.Morning_price or 0) + (runsheet.Evening_price or 0)
+            passenger = runsheet.passenger_name  # This is a Passenger object
+            passenger_name = str(passenger)
+            print(f"Processing passenger: {passenger_name}")
 
+            # Get the string representation of the Passenger object (e.g., passenger name)
+            date = runsheet.date_created.strftime("%d/%m/%Y")
+
+            morning_total = float(runsheet.Morning_price or 0)
+            afternoon_total = float(runsheet.Evening_price or 0)
+            daily_total = morning_total + afternoon_total
+
+            passenger_days[passenger_name][date] += daily_total
+            monthly_totals[passenger_name] += daily_total
+
+        # Write CSV header
         csv_writer = csv.writer(response)
-        csv_writer.writerow(['Passenger', 'Morning Total', 'Afternoon Total', 'Total'])
+        # Add driver's name at the top of the CSV file
+        csv_writer.writerow(['Driver:', driver_name])
+        csv_writer.writerow([])  # Add an empty row for separation
 
-        for passenger, totals in passenger_totals.items():
-            csv_writer.writerow([
-                passenger.name,
-                totals['Morning'],
-                totals['Afternoon'],
-                totals['Total']
-            ])
+        # Use a list of sorted passenger names for the header
+        sorted_passenger_names = sorted(passenger_days.keys())
+        header = ['Date'] + sorted_passenger_names
+        csv_writer.writerow(header)
+
+        # Write daily totals
+        for date in sorted({date for dates in passenger_days.values() for date in dates}):
+            row = [date]
+            for passenger_name in sorted_passenger_names:
+                row.append(f"{passenger_days[passenger_name][date]:.2f}")
+            csv_writer.writerow(row)
+
+        # Write monthly totals
+        total_row = ['TOTAL']
+        for passenger_name in sorted_passenger_names:
+            total_row.append(f"{monthly_totals[passenger_name]:.2f}")
+        csv_writer.writerow(total_row)
 
         return response
 
